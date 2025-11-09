@@ -1,0 +1,64 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  body {
+    @apply antialiased;
+  }
+}
+
+@layer utilities {
+  @keyframes gradient {
+    0%, 100% {
+      background-position: 0% 50%;
+    }
+    50% {
+      background-position: 100% 50%;
+    }
+  }
+
+  .animate-gradient {
+    background-size: 200% 200%;
+    animation: gradient 4s ease infinite;
+  }
+}
+
+@layer components {
+  .sakura-petal {
+    position: absolute;
+    width: 15px;
+    height: 15px;
+    background: radial-gradient(ellipse at center, rgba(255, 189, 205, 0.9) 0%, rgba(255, 122, 157, 0.6) 100%);
+    border-radius: 50% 0 50% 0;
+    pointer-events: none;
+  }
+
+  .cottagecore-card {
+    @apply bg-gradient-to-br from-cottage-50 to-peach-50 border-2 border-cottage-200 rounded-2xl shadow-lg hover:shadow-xl transition-all duration-300;
+  }
+
+  .cottagecore-btn {
+    @apply px-6 py-3 rounded-full font-medium transition-all duration-300 hover:scale-105 active:scale-95;
+  }
+
+  .cottagecore-btn-primary {
+    @apply cottagecore-btn bg-gradient-to-r from-sakura-400 to-peach-400 text-white hover:from-sakura-500 hover:to-peach-500;
+  }
+
+  .cottagecore-btn-secondary {
+    @apply cottagecore-btn bg-gradient-to-r from-brown-400 to-cottage-400 text-white hover:from-brown-500 hover:to-cottage-500;
+  }
+
+  .cottagecore-input {
+    @apply w-full px-4 py-3 bg-white border-2 border-cottage-200 rounded-xl focus:border-sakura-400 focus:ring-2 focus:ring-sakura-200 transition-all outline-none;
+  }
+}
+
+html {
+  scroll-behavior: smooth;
+}
+
+* {
+  box-sizing: border-box;
+}
