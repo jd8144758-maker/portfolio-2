@@ -1,6 +1,7 @@
 import { useState, useEffect } from 'react';
 import { X, Plus, Trash2, Edit2, Save, Upload, Settings, Package, ShoppingBag } from 'lucide-react';
 import { supabase, Photo, Live2DModel, Game, SiteSetting, PhotoInventory, Order } from '../lib/supabase';
+import { uploadFile, deleteFile, validateFileType, validateFileSize, IMAGE_ALLOWED_TYPES, VIDEO_ALLOWED_TYPES, MAX_IMAGE_SIZE_MB, MAX_VIDEO_SIZE_MB } from '../lib/storage';
 
 interface AdminPanelProps {
   onClose: () => void;
@@ -65,37 +66,57 @@ export default function AdminPanel({ onClose }: AdminPanelProps) {
     }
   };
 
-  const handleImageUpload = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
+  const handleImageUpload = async (file: File, bucket: 'photos' | 'live2d-images' | 'games'): Promise<string> => {
+    if (!validateFileType(file, IMAGE_ALLOWED_TYPES)) {
+      alert('Invalid file type. Please upload an image file (JPEG, PNG, WebP, or GIF).');
+      return '';
+    }
+
+    if (!validateFileSize(file, MAX_IMAGE_SIZE_MB)) {
+      alert(`File too large. Maximum size is ${MAX_IMAGE_SIZE_MB}MB.`);
+      return '';
+    }
 
     try {
-      const response = await fetch('https://api.cloudinary.com/v1_1/demo/image/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      return data.secure_url;
+      const result = await uploadFile(file, bucket);
+
+      if (result.error) {
+        alert(`Upload failed: ${result.error}`);
+        return '';
+      }
+
+      return result.url;
     } catch (error) {
       console.error('Upload failed:', error);
-      return URL.createObjectURL(file);
+      alert('Upload failed. Please try again.');
+      return '';
     }
   };
 
   const handleVideoUpload = async (file: File): Promise<string> => {
-    const formData = new FormData();
-    formData.append('file', file);
+    if (!validateFileType(file, VIDEO_ALLOWED_TYPES)) {
+      alert('Invalid file type. Please upload a video file (MP4, WebM, MOV, or AVI).');
+      return '';
+    }
+
+    if (!validateFileSize(file, MAX_VIDEO_SIZE_MB)) {
+      alert(`File too large. Maximum size is ${MAX_VIDEO_SIZE_MB}MB.`);
+      return '';
+    }
 
     try {
-      const response = await fetch('https://api.cloudinary.com/v1_1/demo/video/upload', {
-        method: 'POST',
-        body: formData,
-      });
-      const data = await response.json();
-      return data.secure_url;
+      const result = await uploadFile(file, 'live2d-videos');
+
+      if (result.error) {
+        alert(`Upload failed: ${result.error}`);
+        return '';
+      }
+
+      return result.url;
     } catch (error) {
       console.error('Upload failed:', error);
-      return URL.createObjectURL(file);
+      alert('Upload failed. Please try again.');
+      return '';
     }
   };
 
@@ -195,8 +216,10 @@ function PhotosSection({ photos, onDelete, onEdit, editingId, onRefresh, showAdd
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setUploading(true);
       const file = e.dataTransfer.files[0];
-      const url = await onImageUpload(file);
-      setFormData({ ...formData, image_url: url });
+      const url = await onImageUpload(file, 'photos');
+      if (url) {
+        setFormData({ ...formData, image_url: url });
+      }
       setUploading(false);
     }
   };
@@ -401,11 +424,13 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setUploading(true);
       const file = e.dataTransfer.files[0];
-      const url = type === 'image' ? await onImageUpload(file) : await onVideoUpload(file);
-      if (type === 'image') {
-        setFormData({ ...formData, image_url: url });
-      } else {
-        setFormData({ ...formData, video_url: url });
+      const url = type === 'image' ? await onImageUpload(file, 'live2d-images') : await onVideoUpload(file);
+      if (url) {
+        if (type === 'image') {
+          setFormData({ ...formData, image_url: url });
+        } else {
+          setFormData({ ...formData, video_url: url });
+        }
       }
       setUploading(false);
     }
@@ -639,8 +664,10 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setUploading(true);
       const file = e.dataTransfer.files[0];
-      const url = await onImageUpload(file);
-      setFormData({ ...formData, image_url: url });
+      const url = await onImageUpload(file, 'games');
+      if (url) {
+        setFormData({ ...formData, image_url: url });
+      }
       setUploading(false);
     }
   };
