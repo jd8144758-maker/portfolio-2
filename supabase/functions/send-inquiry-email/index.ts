@@ -1,4 +1,5 @@
 import "jsr:@supabase/functions-js/edge-runtime.d.ts";
+import { createClient } from "npm:@supabase/supabase-js@2.57.4";
 
 const corsHeaders = {
   "Access-Control-Allow-Origin": "*",
@@ -42,9 +43,63 @@ Deno.serve(async (req: Request) => {
       );
     }
 
+    // Initialize Supabase client
+    const supabaseUrl = Deno.env.get("SUPABASE_URL");
+    const supabaseServiceKey = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY");
+
+    if (!supabaseUrl || !supabaseServiceKey) {
+      console.error("Supabase credentials not configured");
+      return new Response(
+        JSON.stringify({
+          success: false,
+          error: "Database not configured",
+        }),
+        {
+          status: 500,
+          headers: {
+            ...corsHeaders,
+            "Content-Type": "application/json",
+          },
+        }
+      );
+    }
+
+    const supabase = createClient(supabaseUrl, supabaseServiceKey);
+
+    // Save inquiry to database
+    const { error: dbError } = await supabase.from("inquiries").insert([
+      {
+        name,
+        email,
+        message,
+        section,
+        is_read: false,
+      },
+    ]);
+
+    if (dbError) {
+      console.error("Database error:", dbError);
+    }
+
     const resendApiKey = Deno.env.get("RESEND_API_KEY");
     if (!resendApiKey) {
       console.error("RESEND_API_KEY not configured");
+      // Still return success if inquiry was saved to database
+      if (!dbError) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Inquiry received (email service not configured)",
+          }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
       return new Response(
         JSON.stringify({
           success: false,
@@ -75,8 +130,8 @@ Deno.serve(async (req: Request) => {
         Authorization: `Bearer ${resendApiKey}`,
       },
       body: JSON.stringify({
-        from: "noreply@example.com",
-        to: "your-email@example.com",
+        from: "noreply@kairoroku.com",
+        to: "kairoroku@gmail.com",
         subject: `New ${section.toUpperCase()} Inquiry from ${name}`,
         html: emailBody,
         reply_to: email,
@@ -86,10 +141,29 @@ Deno.serve(async (req: Request) => {
     if (!response.ok) {
       const error = await response.text();
       console.error("Resend error:", error);
+
+      // Still return partial success if inquiry was saved to database
+      if (!dbError) {
+        return new Response(
+          JSON.stringify({
+            success: true,
+            message: "Inquiry saved but email failed to send",
+            warning: "Your inquiry was received but the email notification may not have been sent",
+          }),
+          {
+            status: 200,
+            headers: {
+              ...corsHeaders,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+      }
+
       return new Response(
         JSON.stringify({
           success: false,
-          error: "Failed to send email",
+          error: "Failed to send email and save inquiry",
         }),
         {
           status: 500,
@@ -104,7 +178,9 @@ Deno.serve(async (req: Request) => {
     return new Response(
       JSON.stringify({
         success: true,
-        message: "Email sent successfully",
+        message: "Inquiry received and email sent successfully",
+        databaseSaved: !dbError,
+        emailSent: true,
       }),
       {
         status: 200,
