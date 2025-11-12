@@ -241,20 +241,38 @@ console.log('Current user:', user);
     }
 
     try {
+      const photoData = {
+        title: formData.title,
+        description: formData.description,
+        category: formData.category,
+        image_url: formData.image_url,
+      };
+
       if (editingId) {
-        const { error } = await supabase.from('photos').update(formData).eq('id', editingId);
-        if (error) throw error;
+        const { data, error } = await supabase.from('photos').update(photoData).eq('id', editingId).select();
+        if (error) {
+          console.error('Update error details:', error);
+          throw error;
+        }
+        console.log('Photo updated:', data);
       } else {
-        const { error } = await supabase.from('photos').insert([formData]);
-        if (error) throw error;
+        const { data, error } = await supabase.from('photos').insert([photoData]).select();
+        if (error) {
+          console.error('Insert error details:', error);
+          throw error;
+        }
+        console.log('Photo created:', data);
       }
+
       onRefresh();
       setFormData({ title: '', description: '', category: '', image_url: '' });
       setShowAddForm(false);
       onEdit(null);
+      alert('Photo saved successfully!');
     } catch (error) {
       console.error('Error saving photo:', error);
-      alert('Failed to save photo: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert('Failed to save photo: ' + errorMsg);
     }
   };
 
@@ -472,25 +490,42 @@ function Live2DSection({ models, onDelete, onEdit, editingId, onRefresh, showAdd
 
     try {
       const featuresArray = formData.features.split(',').map(f => f.trim()).filter(f => f);
-      const data = {
-        ...formData,
+      const modelData = {
+        title: formData.title,
+        client: formData.client,
+        type: formData.type,
+        image_url: formData.image_url,
+        video_url: formData.video_url,
         features: featuresArray,
+        rating: formData.rating || 5,
+        year: formData.year || new Date().getFullYear().toString(),
       };
 
       if (editingId) {
-        const { error } = await supabase.from('live2d_models').update(data).eq('id', editingId);
-        if (error) throw error;
+        const { data, error } = await supabase.from('live2d_models').update(modelData).eq('id', editingId).select();
+        if (error) {
+          console.error('Update error details:', error);
+          throw error;
+        }
+        console.log('Model updated:', data);
       } else {
-        const { error } = await supabase.from('live2d_models').insert([data]);
-        if (error) throw error;
+        const { data, error } = await supabase.from('live2d_models').insert([modelData]).select();
+        if (error) {
+          console.error('Insert error details:', error);
+          throw error;
+        }
+        console.log('Model created:', data);
       }
+
       onRefresh();
       setFormData({ title: '', client: '', type: '', image_url: '', video_url: '', features: '', rating: 5, year: new Date().getFullYear().toString() });
       setShowAddForm(false);
       onEdit(null);
+      alert('Model saved successfully!');
     } catch (error) {
       console.error('Error saving model:', error);
-      alert('Failed to save model: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert('Failed to save model: ' + errorMsg);
     }
   };
 
@@ -721,25 +756,43 @@ function GamesSection({ games, onDelete, onEdit, editingId, onRefresh, showAddFo
 
     try {
       const techArray = formData.tech.split(',').map(t => t.trim()).filter(t => t);
-      const data = {
-        ...formData,
+      const gameData = {
+        title: formData.title,
+        genre: formData.genre,
+        description: formData.description,
+        image_url: formData.image_url,
         tech: techArray,
+        status: formData.status || 'In Development',
+        year: formData.year || new Date().getFullYear().toString(),
+        players: formData.players || 'Single Player',
+        is_enabled: formData.is_enabled !== undefined ? formData.is_enabled : true,
       };
 
       if (editingId) {
-        const { error } = await supabase.from('games').update(data).eq('id', editingId);
-        if (error) throw error;
+        const { data, error } = await supabase.from('games').update(gameData).eq('id', editingId).select();
+        if (error) {
+          console.error('Update error details:', error);
+          throw error;
+        }
+        console.log('Game updated:', data);
       } else {
-        const { error } = await supabase.from('games').insert([data]);
-        if (error) throw error;
+        const { data, error } = await supabase.from('games').insert([gameData]).select();
+        if (error) {
+          console.error('Insert error details:', error);
+          throw error;
+        }
+        console.log('Game created:', data);
       }
+
       onRefresh();
       setFormData({ title: '', genre: '', description: '', image_url: '', tech: '', status: 'In Development', year: new Date().getFullYear().toString(), players: 'Single Player', is_enabled: true });
       setShowAddForm(false);
       onEdit(null);
+      alert('Game saved successfully!');
     } catch (error) {
       console.error('Error saving game:', error);
-      alert('Failed to save game: ' + (error instanceof Error ? error.message : 'Unknown error'));
+      const errorMsg = error instanceof Error ? error.message : String(error);
+      alert('Failed to save game: ' + errorMsg);
     }
   };
 
