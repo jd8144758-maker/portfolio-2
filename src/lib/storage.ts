@@ -73,8 +73,13 @@ export const getPublicUrl = (bucket: BucketName, path: string): string => {
   return data.publicUrl;
 };
 
-export const validateFileType = (file: File, allowedTypes: string[]): boolean => {
+export function validateFileType(file: File | undefined, allowedTypes: string[]) {
+  if (!file || !file.type) {
+    console.warn('No valid file detected in validateFileType.');
+    return false;
+  }
   return allowedTypes.includes(file.type);
+}
 };
 
 export const validateFileSize = (file: File, maxSizeMB: number): boolean => {
