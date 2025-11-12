@@ -215,8 +215,6 @@ function PhotosSection({ photos, onDelete, onEdit, editingId, onRefresh, showAdd
 
     if (e.dataTransfer.files && e.dataTransfer.files[0]) {
       setUploading(true);
-      const user = await supabase.auth.getUser();
-console.log('Current user:', user);
 
       const file = e.dataTransfer.files[0];
       const url = await onImageUpload(file, 'photos');
