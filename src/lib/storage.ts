@@ -79,7 +79,7 @@ export function validateFileType(file: File | undefined, allowedTypes: string[])
     return false;
   }
   return allowedTypes.includes(file.type);
-}
+
 };
 
 export const validateFileSize = (file: File, maxSizeMB: number): boolean => {
